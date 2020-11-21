@@ -1,20 +1,20 @@
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.6.12;
 import "./RoleAware.sol";
-import "./Promotable.sol";
-import "@openzeppelin/contracts/math/SafeMath.sol";
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
-abstract contract Presaleable is RoleAware, ReentrancyGuard, UniswapAware {
+abstract contract ERC20Presaleable is RoleAware, ReentrancyGuard, ERC20 {
     bool internal _presale = true;
-    using SafeMath for uint256;
 
-    uint256 internal _presaleApePerEther = 200;
-    uint256 internal _presaleApePerEtherAfterThreshhold = 180;
+    uint256 public _presaleApePerEther = 200;
+    uint256 public _presaleApePerEtherAfterThreshhold = 180;
+    uint256 public _uniswapApePerEth = 160;
     uint256 internal _minTokenPurchaseAmount = .1 ether;
     uint256 internal _maxTokenPurchaseAmount = 1.5 ether;
     uint256 internal _maxPresaleEtherValue = 99 ether;
     uint256 internal _presaleEtherThreshhold = 69 ether;
     uint256 internal _presaleEtherReceived = 0 ether;
-    uint256 internal _firstTradeBlock = 0;
+
     mapping(address => uint256) public _presaleContributions;
 
     modifier onlyDuringPresale() {
@@ -22,9 +22,8 @@ abstract contract Presaleable is RoleAware, ReentrancyGuard, UniswapAware {
         _;
     }
 
-    function stopPresale() public onlyDeveloper {
+    function stopPresale() public onlyDeveloper onlyDuringPresale {
         _presale = false;
-        _firstTradeBlock = block.number;
     }
 
     function startPresale() public onlyBeforeUniswap onlyDeveloper {
@@ -48,7 +47,7 @@ abstract contract Presaleable is RoleAware, ReentrancyGuard, UniswapAware {
         );
         require(
             _presaleContributions[msg.sender].add(msg.value) <=
-                _maxTokenPurchaseAmount,
+                _maxTokenPurchaseAmount.mul(_presaleApePerEther),
             "Max purchase for your account account exceeded"
         );
 
@@ -62,16 +61,30 @@ abstract contract Presaleable is RoleAware, ReentrancyGuard, UniswapAware {
         );
 
         _presaleEtherReceived = _presaleEtherReceived.add(msg.value);
-        _developer.transfer(msg.value);
+
+        _developer.transfer(msg.value.mul(2).div(10));
     }
 
     function _getPresaleEntitlement() internal returns (uint256) {
         require(
             _presaleContributions[msg.sender] >= 0,
-            "You didn't contribute anything to the presale or you've already redeemed"
+            "No presale contribution or already redeemed"
         );
         uint256 value = _presaleContributions[msg.sender];
         _presaleContributions[msg.sender] = 0;
         return value;
+    }
+
+    // presale funds only claimable after uniswap pair created to prevent malicious 3rd-party listing
+    function claimPresale()
+        public
+        onlyAfterUniswap
+        nonReentrant
+        returns (bool)
+    {
+        uint256 result = _getPresaleEntitlement();
+        if (result > 0) {
+            _mint(msg.sender, result);
+        }
     }
 }

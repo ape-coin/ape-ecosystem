@@ -1,32 +1,39 @@
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.6.12;
 
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import "@openzeppelin/contracts/math/SafeMath.sol";
-import "./lib/Presaleable.sol";
+import "./lib/ERC20Presaleable.sol";
+import "./lib/ERC20Vestable.sol";
+import "./lib/ERC20Burnable.sol";
+import "@uniswap/v2-periphery/contracts/interfaces/IUniswapV2Router02.sol";
 
-contract ApeToken is ERC20, Presaleable {
-    uint256 public _minimumSupply = 20000 * (10**18);
-    uint256 public _maximumSupply = 100000 * (10**18);
+// APE Token (https://ape.cash)
+// Presale	                    19200	19.20%
+// Initial Uniswap Liquidity	12800	13.20%
+// Marketing (vested)           5000	5.00%
+// Team	& development (vested)  15000	15.00%
+// Liquidity Mining	            48000	44.96%
+// Total Supply	                100000	100.00%
 
-    constructor(address payable developer, address payable marketing)
-        public
-        ERC20("Ape.cash", "APE")
-        RoleAware(developer)
-    {
-        // todo: code up vesting schedule
-        _mint(developer, 15000 * (10**uint256(decimals())));
-        _mint(marketing, 5000 * (10**uint256(decimals())));
+contract ApeToken is ERC20Burnable, ERC20Vestable, ERC20Presaleable {
+    IUniswapV2Router02 private router;
+    address public constant UNISWAP_ROUTER_ADDRESS =
+        0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D;
+
+    constructor(
+        address payable developer,
+        address payable secondDeveloper,
+        address[] memory stakingPools,
+        address marketing
+    ) public ERC20("Ape.cash", "APE") RoleAware(developer, stakingPools) {
+        // number of tokens is vested over 3 months, see ERC20Vestable
+        _addBeneficiary(developer, 10500);
+        _addBeneficiary(secondDeveloper, 4500);
+        _addBeneficiary(marketing, 5000);
+
+        router = IUniswapV2Router02(UNISWAP_ROUTER_ADDRESS);
     }
 
-    // allow APE staking pool to mint rewards for users
-    modifier onlyStakingPool() {
-        require(
-            hasRole(STAKING_POOL_ROLE, msg.sender),
-            "Caller is not a staking pool"
-        );
-        _;
-    }
-
+    // allow contracts with role ape staking pool can mint rewards for users
     function mint(address to, uint256 amount)
         public
         onlyStakingPool
@@ -37,61 +44,38 @@ contract ApeToken is ERC20, Presaleable {
         }
     }
 
-    function _partialBurn(uint256 amount) internal returns (uint256) {
-        uint256 burnAmount = _calculateBurnAmount(amount);
+    function listOnUniswap() public onlyDeveloper onlyBeforeUniswap {
+        stopPresale();
+        // mint 160 APE per held ETH to list on Uniswap
+        uint256 ethBalance = address(this).balance;
+        uint256 apeBalance = ethBalance.mul(_uniswapApePerEth);
+        _mint(address(this), apeBalance);
 
-        if (burnAmount > 0) {
-            _burn(msg.sender, burnAmount);
-        }
+        router.addLiquidityETH{value: ethBalance}(
+            address(this),
+            apeBalance,
+            apeBalance.div(100).mul(98),
+            ethBalance.div(100).mul(98),
+            address(this),
+            block.timestamp + uint256(5).mul(1 minutes)
+        );
 
-        return amount.sub(burnAmount);
-    }
-
-    function _calculateBurnAmount(uint256 amount)
-        internal
-        view
-        returns (uint256)
-    {
-        uint256 burnAmount = 0;
-
-        // burn amount calculations
-        if (totalSupply() > _minimumSupply) {
-            burnAmount = amount.mul(3).div(100);
-            uint256 availableBurn = totalSupply().sub(_minimumSupply);
-            if (burnAmount > availableBurn) {
-                burnAmount = availableBurn;
-            }
-        }
-
-        return burnAmount;
+        timeListed = now;
     }
 
     function transfer(address recipient, uint256 amount)
         public
-        virtual
-        override
+        override(ERC20Burnable, ERC20)
         returns (bool)
     {
-        return super.transfer(recipient, _partialBurn(amount));
+        return ERC20Burnable.transfer(recipient, amount);
     }
 
     function transferFrom(
         address sender,
         address recipient,
         uint256 amount
-    ) public virtual override returns (bool) {
-        return super.transferFrom(sender, recipient, _partialBurn(amount));
-    }
-
-    function claimPresale()
-        public
-        onlyAfterUniswap
-        nonReentrant
-        returns (bool)
-    {
-        uint256 result = _getPresaleEntitlement();
-        if (result > 0) {
-            _mint(msg.sender, result);
-        }
+    ) public override(ERC20Burnable, ERC20) returns (bool) {
+        return ERC20Burnable.transferFrom(sender, recipient, amount);
     }
 }

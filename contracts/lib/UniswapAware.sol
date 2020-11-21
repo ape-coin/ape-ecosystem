@@ -1,7 +1,8 @@
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.6.12;
 
 contract UniswapAware {
-    address internal _uniswapEthPair;
+    address public _uniswapEthPair;
 
     function isContract(address _addr) private view returns (bool) {
         uint32 size;
@@ -24,9 +25,8 @@ contract UniswapAware {
         address tokenA,
         address tokenB
     ) internal pure returns (address pair) {
-        (address token0, address token1) = tokenA < tokenB
-            ? (tokenA, tokenB)
-            : (tokenB, tokenA);
+        (address token0, address token1) =
+            tokenA < tokenB ? (tokenA, tokenB) : (tokenB, tokenA);
         pair = address(
             uint256(
                 keccak256(

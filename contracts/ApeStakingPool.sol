@@ -1,4 +1,5 @@
-pragma solidity ^0.6.0;
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.6.12;
 
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
@@ -8,15 +9,15 @@ import "./ApeToken.sol";
 contract ApeStakingPool is ReentrancyGuard, Ownable {
     using SafeMath for uint256;
 
-    uint256 constant UINT256_MAX = ~uint256(0);
-    uint256 constant MONTH = 30 days;
+    uint256 private constant UINT256_MAX = ~uint256(0);
+    uint256 private constant MONTH = 30 days;
 
     ApeToken private _APE;
 
     bool private _dated;
-    uint256 _deployedAt;
+    uint256 private _deployedAt;
 
-    uint256 _totalStaked;
+    uint256 public _totalStaked;
     mapping(address => uint256) private _staked;
     mapping(address => uint256) private _lastClaim;
     address private _developerFund;
@@ -73,9 +74,8 @@ contract ApeStakingPool is ReentrancyGuard, Ownable {
     }
 
     function calculateSupplyDivisor() public view returns (uint256) {
-        uint256 result = uint256(20).add(
-            block.timestamp.sub(_deployedAt).div(MONTH).mul(5)
-        );
+        uint256 result =
+            uint256(20).add(block.timestamp.sub(_deployedAt).div(MONTH).mul(5));
 
         if (result > 50) {
             result = 50;
@@ -84,9 +84,10 @@ contract ApeStakingPool is ReentrancyGuard, Ownable {
     }
 
     function _calculateMintage(address staker) private view returns (uint256) {
-        uint256 share = _APE.totalSupply().div(calculateSupplyDivisor()).div(
-            _totalStaked.div(_staked[staker])
-        );
+        uint256 share =
+            _APE.totalSupply().div(calculateSupplyDivisor()).div(
+                _totalStaked.div(_staked[staker])
+            );
 
         uint256 timeElapsed = block.timestamp.sub(_lastClaim[staker]);
         uint256 mintage = 0;
