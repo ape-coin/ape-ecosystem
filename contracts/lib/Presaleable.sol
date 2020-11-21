@@ -1,15 +1,17 @@
 pragma solidity ^0.6.12;
-import "./DeveloperAware.sol";
+import "./RoleAware.sol";
 import "./Promotable.sol";
+import "@openzeppelin/contracts/math/SafeMath.sol";
 
-contract Presaleable is Promotable, DeveloperAware {
+abstract contract Presaleable is RoleAware, ReentrancyGuard, UniswapAware {
     bool internal _presale = true;
+    using SafeMath for uint256;
 
     uint256 internal _presaleApePerEther = 200;
     uint256 internal _presaleApePerEtherAfterThreshhold = 180;
     uint256 internal _minTokenPurchaseAmount = .1 ether;
-    uint256 internal _maxTokenPurchaseAmount = 3 ether;
-    uint256 internal _maxPresaleEtherValue = 199 ether;
+    uint256 internal _maxTokenPurchaseAmount = 1.5 ether;
+    uint256 internal _maxPresaleEtherValue = 99 ether;
     uint256 internal _presaleEtherThreshhold = 69 ether;
     uint256 internal _presaleEtherReceived = 0 ether;
     uint256 internal _firstTradeBlock = 0;
@@ -29,7 +31,7 @@ contract Presaleable is Promotable, DeveloperAware {
         _presale = true;
     }
 
-    function presale(string memory referrer)
+    function presale()
         public
         payable
         onlyDuringPresale
@@ -59,17 +61,11 @@ contract Presaleable is Promotable, DeveloperAware {
             )
         );
 
-        _addReferrerReward(referrer);
-
         _presaleEtherReceived = _presaleEtherReceived.add(msg.value);
         _developer.transfer(msg.value);
     }
 
-
-    function _getPresaleEntitlement()
-        internal
-        returns (uint256)
-    {
+    function _getPresaleEntitlement() internal returns (uint256) {
         require(
             _presaleContributions[msg.sender] >= 0,
             "You didn't contribute anything to the presale or you've already redeemed"
@@ -78,5 +74,4 @@ contract Presaleable is Promotable, DeveloperAware {
         _presaleContributions[msg.sender] = 0;
         return value;
     }
-
 }

@@ -6,117 +6,116 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "./ApeToken.sol";
 
 contract ApeStakingPool is ReentrancyGuard, Ownable {
-  using SafeMath for uint256;
+    using SafeMath for uint256;
 
-  uint256 constant UINT256_MAX = ~uint256(0);
-  uint256 constant MONTH = 30 days;
+    uint256 constant UINT256_MAX = ~uint256(0);
+    uint256 constant MONTH = 30 days;
 
-  ApeToken private _APE;
+    ApeToken private _APE;
 
-  bool private _dated;
-  bool private _migrated;
-  uint256 _deployedAt;
+    bool private _dated;
+    uint256 _deployedAt;
 
-  uint256 _totalStaked;
-  mapping (address => uint256) private _staked;
-  mapping (address => uint256) private _lastClaim;
-  address private _developerFund;
+    uint256 _totalStaked;
+    mapping(address => uint256) private _staked;
+    mapping(address => uint256) private _lastClaim;
+    address private _developerFund;
 
-  event StakeIncreased(address indexed staker, uint256 amount);
-  event StakeDecreased(address indexed staker, uint256 amount);
-  event Rewards(address indexed staker, uint256 mintage, uint256 developerFund);
-  event MelodyAdded(address indexed melody);
-  event MelodyRemoved(address indexed melody);
+    event StakeIncreased(address indexed staker, uint256 amount);
+    event StakeDecreased(address indexed staker, uint256 amount);
+    event Rewards(
+        address indexed staker,
+        uint256 mintage,
+        uint256 developerFund
+    );
 
-  constructor(address apeToken) public {
-    _APE = ApeToken(apeToken);
-    _developerFund = msg.sender;
-    _deployedAt = block.timestamp;
-  }
-
-  function upgradeDevelopmentFund(address fund) external onlyOwner {
-    _developerFund = fund;
-  }
-
-  function ape() external view returns (address) {
-    return address(_APE);
-  }
-
-  function totalStaked() external view returns (uint256) {
-    return _totalStaked;
-  }
-
-  function staked(address staker) external view returns (uint256) {
-    return _staked[staker];
-  }
-
-  function lastClaim(address staker) external view returns (uint256) {
-    return _lastClaim[staker];
-  }
-
-  function increaseStake(uint256 amount) external {
-    require(!_dated);
-
-    require(_APE.transferFrom(msg.sender, address(this), amount));
-    _totalStaked = _totalStaked.add(amount);
-    _lastClaim[msg.sender] = block.timestamp;
-    _staked[msg.sender] = _staked[msg.sender].add(amount);
-    emit StakeIncreased(msg.sender, amount);
-  }
-
-  function decreaseStake(uint256 amount) external {
-    _staked[msg.sender] = _staked[msg.sender].sub(amount);
-    _totalStaked = _totalStaked.sub(amount);
-    require(_APE.transfer(address(msg.sender), amount));
-    emit StakeDecreased(msg.sender, amount);
-  }
-
-  function calculateSupplyDivisor() public view returns (uint256) {
-    uint256 result = uint256(20)
-      .add(
-        block.timestamp.sub(_deployedAt).div(MONTH)
-        .mul(5)
-      );
-
-    if (result > 50) {
-      result = 50;
-    }
-    return result;
-  }
-
-  function _calculateMintage(address staker) private view returns (uint256) {
-    uint256 share = _APE.totalSupply()
-      .div(calculateSupplyDivisor())
-      .div(_totalStaked.div(_staked[staker]));
-
-    uint256 timeElapsed = block.timestamp.sub(_lastClaim[staker]);
-    uint256 mintage = 0;
-    if (timeElapsed > MONTH) {
-      mintage = share.mul(timeElapsed.div(MONTH));
-      timeElapsed = timeElapsed.mod(MONTH);
+    constructor(address apeToken) public {
+        _APE = ApeToken(apeToken);
+        _developerFund = msg.sender;
+        _deployedAt = block.timestamp;
     }
 
-    if (timeElapsed != 0) {
-      mintage = mintage.add(share.div(MONTH.div(timeElapsed)));
+    function upgradeDevelopmentFund(address fund) external onlyOwner {
+        _developerFund = fund;
     }
-    return mintage;
-  }
 
-  function calculateRewards(address staker) public view returns (uint256) {
-    return _calculateMintage(staker).div(20).mul(19);
-  }
+    function ape() external view returns (address) {
+        return address(_APE);
+    }
 
-  function claimRewards() external nonReentrant {
-    require(!_dated);
+    function totalStaked() external view returns (uint256) {
+        return _totalStaked;
+    }
 
-    uint256 mintage = _calculateMintage(msg.sender);
-    uint256 mintagePiece = mintage.div(20);
-    require(mintagePiece > 0);
+    function staked(address staker) external view returns (uint256) {
+        return _staked[staker];
+    }
 
-    _lastClaim[msg.sender] = block.timestamp;
-    _APE.mint(msg.sender, mintage.sub(mintagePiece));
-    _APE.mint(_developerFund, mintagePiece);
+    function lastClaim(address staker) external view returns (uint256) {
+        return _lastClaim[staker];
+    }
 
-    emit Rewards(msg.sender, mintage, mintagePiece);
-  }
+    function increaseStake(uint256 amount) external {
+        require(!_dated);
+
+        require(_APE.transferFrom(msg.sender, address(this), amount));
+        _totalStaked = _totalStaked.add(amount);
+        _lastClaim[msg.sender] = block.timestamp;
+        _staked[msg.sender] = _staked[msg.sender].add(amount);
+        emit StakeIncreased(msg.sender, amount);
+    }
+
+    function decreaseStake(uint256 amount) external {
+        _staked[msg.sender] = _staked[msg.sender].sub(amount);
+        _totalStaked = _totalStaked.sub(amount);
+        require(_APE.transfer(address(msg.sender), amount));
+        emit StakeDecreased(msg.sender, amount);
+    }
+
+    function calculateSupplyDivisor() public view returns (uint256) {
+        uint256 result = uint256(20).add(
+            block.timestamp.sub(_deployedAt).div(MONTH).mul(5)
+        );
+
+        if (result > 50) {
+            result = 50;
+        }
+        return result;
+    }
+
+    function _calculateMintage(address staker) private view returns (uint256) {
+        uint256 share = _APE.totalSupply().div(calculateSupplyDivisor()).div(
+            _totalStaked.div(_staked[staker])
+        );
+
+        uint256 timeElapsed = block.timestamp.sub(_lastClaim[staker]);
+        uint256 mintage = 0;
+        if (timeElapsed > MONTH) {
+            mintage = share.mul(timeElapsed.div(MONTH));
+            timeElapsed = timeElapsed.mod(MONTH);
+        }
+
+        if (timeElapsed != 0) {
+            mintage = mintage.add(share.div(MONTH.div(timeElapsed)));
+        }
+        return mintage;
+    }
+
+    function calculateRewards(address staker) public view returns (uint256) {
+        return _calculateMintage(staker).div(20).mul(19);
+    }
+
+    function claimRewards() external nonReentrant {
+        require(!_dated);
+
+        uint256 mintage = _calculateMintage(msg.sender);
+        uint256 mintagePiece = mintage.div(20);
+        require(mintagePiece > 0);
+
+        _lastClaim[msg.sender] = block.timestamp;
+        _APE.mint(msg.sender, mintage.sub(mintagePiece));
+        _APE.mint(_developerFund, mintagePiece);
+
+        emit Rewards(msg.sender, mintage, mintagePiece);
+    }
 }

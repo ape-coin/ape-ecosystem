@@ -1,17 +1,21 @@
 pragma solidity ^0.6.12;
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
-import "./Presaleable.sol";
+import "./lib/Presaleable.sol";
 
-contract ApeToken is ERC20, AccessControl, Presaleable {
-    bytes32 public constant STAKING_POOL_ROLE = keccak256("STAKING_POOL_ROLE");
-    uint256 internal _minimumSupply = 20000 * (10**18);
+contract ApeToken is ERC20, Presaleable {
+    uint256 public _minimumSupply = 20000 * (10**18);
+    uint256 public _maximumSupply = 100000 * (10**18);
 
-    constructor() public ERC20("Ape.cash", "APE") {
-        _mint(_developer, 10000 * (10**uint256(decimals())));
-        _setupRole(STAKING_POOL_ROLE, msg.sender);
+    constructor(address payable developer, address payable marketing)
+        public
+        ERC20("Ape.cash", "APE")
+        RoleAware(developer)
+    {
+        // todo: code up vesting schedule
+        _mint(developer, 15000 * (10**uint256(decimals())));
+        _mint(marketing, 5000 * (10**uint256(decimals())));
     }
 
     // allow APE staking pool to mint rewards for users
@@ -28,7 +32,9 @@ contract ApeToken is ERC20, AccessControl, Presaleable {
         onlyStakingPool
         nonReentrant
     {
-        _mint(to, amount);
+        if (totalSupply() <= _maximumSupply) {
+            _mint(to, amount);
+        }
     }
 
     function _partialBurn(uint256 amount) internal returns (uint256) {
@@ -84,13 +90,6 @@ contract ApeToken is ERC20, AccessControl, Presaleable {
         returns (bool)
     {
         uint256 result = _getPresaleEntitlement();
-        if (result > 0) {
-            _mint(msg.sender, result);
-        }
-    }
-
-    function claimReffererReward() public nonReentrant onlyAfterUniswap {
-        uint256 result = _getReferrerReward();
         if (result > 0) {
             _mint(msg.sender, result);
         }
