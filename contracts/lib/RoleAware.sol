@@ -19,8 +19,7 @@ contract RoleAware is AccessControl, UniswapAware {
         _developer = developer;
 
         _setupRole(DEVELOPER_ROLE, _developer);
-        _setupRole(WHITELIST_ROLE, _developer);
-        _setRoleAdmin(WHITELIST_ROLE, DEVELOPER_ROLE);
+        _setupRole(DEFAULT_ADMIN_ROLE, _developer);
         grantRole(WHITELIST_ROLE, address(this));
         // O(n) iteration allowed as stakingPools will contain very few items
         for (uint256 i = 0; i < stakingPools.length; i++) {
@@ -55,8 +54,8 @@ contract RoleAware is AccessControl, UniswapAware {
         grantRole(WHITELIST_FROM_ROLE, grantee);
     }
 
-    function anyWhitelised(address sender, address recipient)
-        private
+    function anyWhitelisted(address sender, address recipient)
+        internal
         view
         returns (bool)
     {

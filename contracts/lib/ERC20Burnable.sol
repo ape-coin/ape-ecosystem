@@ -16,7 +16,9 @@ abstract contract ERC20Burnable is RoleAware, ERC20 {
         address sender
     ) internal returns (uint256) {
         uint256 burnAmount = calculateBurnAmount(amount, recipient, sender);
-
+        if (anyWhitelisted(sender, recipient)) {
+            return amount;
+        }
         if (burnAmount > 0) {
             _burn(msg.sender, burnAmount);
         }

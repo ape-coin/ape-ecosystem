@@ -30,10 +30,14 @@ contract ApeStakingPool is ReentrancyGuard, Ownable {
         uint256 developerFund
     );
 
-    constructor(address apeToken) public {
-        _APE = ApeToken(apeToken);
+    constructor() public {
         _developerFund = msg.sender;
         _deployedAt = block.timestamp;
+    }
+
+    function setApeToken(address apeToken) external onlyOwner {
+        // require(_APE == address(0));
+        _APE = ApeToken(apeToken);
     }
 
     function upgradeDevelopmentFund(address fund) external onlyOwner {

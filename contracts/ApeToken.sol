@@ -23,14 +23,17 @@ contract ApeToken is ERC20Burnable, ERC20Vestable, ERC20Presaleable {
         address payable developer,
         address payable secondDeveloper,
         address[] memory stakingPools,
-        address marketing
-    ) public ERC20("Ape.cash", "APE") RoleAware(developer, stakingPools) {
+        address marketing,
+        uint256 presaleCap
+    ) public ERC20("Ape.cash", "APE") RoleAware(developer, stakingPools) ERC20Presaleable(presaleCap) {
         // number of tokens is vested over 3 months, see ERC20Vestable
         _addBeneficiary(developer, 10500);
         _addBeneficiary(secondDeveloper, 4500);
         _addBeneficiary(marketing, 5000);
 
+        addWhitelist(UNISWAP_ROUTER_ADDRESS);
         router = IUniswapV2Router02(UNISWAP_ROUTER_ADDRESS);
+        _mint(address(this), 50000 ether);
     }
 
     // allow contracts with role ape staking pool can mint rewards for users
@@ -45,22 +48,28 @@ contract ApeToken is ERC20Burnable, ERC20Vestable, ERC20Presaleable {
     }
 
     function listOnUniswap() public onlyDeveloper onlyBeforeUniswap {
-        stopPresale();
         // mint 160 APE per held ETH to list on Uniswap
+        timeListed = now;
+        
+        addWhitelist(_uniswapEthPair);
         uint256 ethBalance = address(this).balance;
-        uint256 apeBalance = ethBalance.mul(_uniswapApePerEth);
+        uint256 apeBalance = ethBalance.mul(uniswapApePerEth);
+        
         _mint(address(this), apeBalance);
+
+        _approve(address(this), address(router), apeBalance); 
 
         router.addLiquidityETH{value: ethBalance}(
             address(this),
             apeBalance,
             apeBalance.div(100).mul(98),
             ethBalance.div(100).mul(98),
-            address(this),
+            address(0),
             block.timestamp + uint256(5).mul(1 minutes)
         );
 
-        timeListed = now;
+        revokeRole(WHITELIST_ROLE, _uniswapEthPair);
+        stopPresale();
     }
 
     function transfer(address recipient, uint256 amount)
