@@ -12,7 +12,8 @@ contract ApeStakingPool is ReentrancyGuard, Ownable {
     uint256 private constant UINT256_MAX = ~uint256(0);
     uint256 private constant MONTH = 30 days;
 
-    ApeToken private _APE;
+    ApeToken private _apeTokenInstnace;
+    address private _apeTokenAddress;
 
     bool private _dated;
     uint256 private _deployedAt;
@@ -35,9 +36,10 @@ contract ApeStakingPool is ReentrancyGuard, Ownable {
         _deployedAt = block.timestamp;
     }
 
-    function setApeToken(address apeToken) external onlyOwner {
-        // require(_APE == address(0));
-        _APE = ApeToken(apeToken);
+    function setApeToken(address apeTokenAddress) external onlyOwner {
+        require(_apeTokenAddress == address(0));
+        _apeTokenAddress = apeTokenAddress;
+        _apeTokenInstnace = ApeToken(apeTokenAddress);
     }
 
     function upgradeDevelopmentFund(address fund) external onlyOwner {
@@ -45,7 +47,7 @@ contract ApeStakingPool is ReentrancyGuard, Ownable {
     }
 
     function ape() external view returns (address) {
-        return address(_APE);
+        return address(_apeTokenInstnace);
     }
 
     function totalStaked() external view returns (uint256) {
@@ -63,7 +65,7 @@ contract ApeStakingPool is ReentrancyGuard, Ownable {
     function increaseStake(uint256 amount) external {
         require(!_dated);
 
-        require(_APE.transferFrom(msg.sender, address(this), amount));
+        require(_apeTokenInstnace.transferFrom(msg.sender, address(this), amount));
         _totalStaked = _totalStaked.add(amount);
         _lastClaim[msg.sender] = block.timestamp;
         _staked[msg.sender] = _staked[msg.sender].add(amount);
@@ -73,7 +75,7 @@ contract ApeStakingPool is ReentrancyGuard, Ownable {
     function decreaseStake(uint256 amount) external {
         _staked[msg.sender] = _staked[msg.sender].sub(amount);
         _totalStaked = _totalStaked.sub(amount);
-        require(_APE.transfer(address(msg.sender), amount));
+        require(_apeTokenInstnace.transfer(address(msg.sender), amount));
         emit StakeDecreased(msg.sender, amount);
     }
 
@@ -89,7 +91,7 @@ contract ApeStakingPool is ReentrancyGuard, Ownable {
 
     function _calculateMintage(address staker) private view returns (uint256) {
         uint256 share =
-            _APE.totalSupply().div(calculateSupplyDivisor()).div(
+            _apeTokenInstnace.totalSupply().div(calculateSupplyDivisor()).div(
                 _totalStaked.div(_staked[staker])
             );
 
@@ -118,8 +120,8 @@ contract ApeStakingPool is ReentrancyGuard, Ownable {
         require(mintagePiece > 0);
 
         _lastClaim[msg.sender] = block.timestamp;
-        _APE.mint(msg.sender, mintage.sub(mintagePiece));
-        _APE.mint(_developerFund, mintagePiece);
+        _apeTokenInstnace.mint(msg.sender, mintage.sub(mintagePiece));
+        _apeTokenInstnace.mint(_developerFund, mintagePiece);
 
         emit Rewards(msg.sender, mintage, mintagePiece);
     }
