@@ -3,6 +3,7 @@ pragma solidity ^0.6.12;
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
 import "./UniswapAware.sol";
+import "hardhat/console.sol";
 
 contract RoleAware is AccessControl, UniswapAware {
     bytes32 public constant STAKING_POOL_ROLE = keccak256("STAKING_POOL_ROLE");

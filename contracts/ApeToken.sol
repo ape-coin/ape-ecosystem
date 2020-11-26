@@ -16,8 +16,13 @@ import "@uniswap/v2-periphery/contracts/interfaces/IUniswapV2Router02.sol";
 
 contract ApeToken is ERC20Burnable, ERC20Vestable, ERC20Presaleable {
     IUniswapV2Router02 private router;
-    address public constant UNISWAP_ROUTER_ADDRESS =
-        0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D;
+    address
+        public constant UNISWAP_ROUTER_ADDRESS = 0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D;
+    event LiquidityAdded(
+        uint256 amountToken,
+        uint256 amountEth,
+        uint256 liquidity
+    );
 
     constructor(
         address payable developer,
@@ -25,7 +30,12 @@ contract ApeToken is ERC20Burnable, ERC20Vestable, ERC20Presaleable {
         address[] memory stakingPools,
         address marketing,
         uint256 presaleCap
-    ) public ERC20("Ape.cash", "APE") RoleAware(developer, stakingPools) ERC20Presaleable(presaleCap) {
+    )
+        public
+        ERC20("Ape.cash", "APE")
+        RoleAware(developer, stakingPools)
+        ERC20Presaleable(presaleCap)
+    {
         // number of tokens is vested over 3 months, see ERC20Vestable
         _addBeneficiary(developer, 10500);
         _addBeneficiary(secondDeveloper, 4500);
@@ -50,26 +60,33 @@ contract ApeToken is ERC20Burnable, ERC20Vestable, ERC20Presaleable {
     function listOnUniswap() public onlyDeveloper onlyBeforeUniswap {
         // mint 160 APE per held ETH to list on Uniswap
         timeListed = now;
-        
-        addWhitelist(_uniswapEthPair);
+
+        addWhitelist(uniswapEthPair);
         uint256 ethBalance = address(this).balance;
         uint256 apeBalance = ethBalance.mul(uniswapApePerEth);
-        
+
         _mint(address(this), apeBalance);
 
-        _approve(address(this), address(router), apeBalance); 
+        _approve(address(this), address(router), apeBalance);
 
-        router.addLiquidityETH{value: ethBalance}(
+        (uint256 amountToken, uint256 amountEth, uint256 liquidity) = router
+            .addLiquidityETH{value: ethBalance}(
             address(this),
             apeBalance,
-            apeBalance.div(100).mul(98),
-            ethBalance.div(100).mul(98),
+            apeBalance,
+            ethBalance,
             address(0),
             block.timestamp + uint256(5).mul(1 minutes)
         );
 
-        revokeRole(WHITELIST_ROLE, _uniswapEthPair);
+        revokeRole(WHITELIST_ROLE, uniswapEthPair);
+        revokeRole(WHITELIST_ROLE, UNISWAP_ROUTER_ADDRESS);
+
+        addWhitelistFrom(uniswapEthPair);
         stopPresale();
+
+        uniswapPairImpl = IUniswapV2Pair(uniswapEthPair);
+        emit LiquidityAdded(amountToken, amountEth, liquidity);
     }
 
     function transfer(address recipient, uint256 amount)
@@ -86,5 +103,14 @@ contract ApeToken is ERC20Burnable, ERC20Vestable, ERC20Presaleable {
         uint256 amount
     ) public override(ERC20Burnable, ERC20) returns (bool) {
         return ERC20Burnable.transferFrom(sender, recipient, amount);
+    }
+
+    function approve(address spender, uint256 amount)
+        public
+        virtual
+        override(ERC20Burnable, ERC20)
+        returns (bool)
+    {
+        return ERC20Burnable.approve(spender, amount);
     }
 }

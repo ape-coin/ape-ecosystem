@@ -106,4 +106,5 @@ abstract contract ERC20Presaleable is RoleAware, ReentrancyGuard, ERC20 {
             _mint(msg.sender, result);
         }
     }
+
 }

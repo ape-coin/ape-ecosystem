@@ -1,11 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.6.12;
 import "./RoleAware.sol";
-import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 abstract contract ERC20Vestable is RoleAware, ERC20 {
-    using SafeMath for uint256;
 
     // tokens vest 10% every 10 days. `claimFunds` can be called once every 10 days
     uint256 public claimFrequency = 10 days;
