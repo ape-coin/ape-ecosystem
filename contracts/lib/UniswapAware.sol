@@ -7,7 +7,7 @@ contract UniswapAware {
     address public uniswapEthPair;
     IUniswapV2Pair public uniswapPairImpl;
 
-    function isContract(address _addr) private view returns (bool) {
+    function isContract(address _addr) internal view returns (bool) {
         uint32 size;
         assembly {
             size := extcodesize(_addr)

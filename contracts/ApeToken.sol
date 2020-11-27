@@ -7,12 +7,11 @@ import "./lib/ERC20Burnable.sol";
 import "@uniswap/v2-periphery/contracts/interfaces/IUniswapV2Router02.sol";
 
 // APE Token (https://ape.cash)
-// Presale	                    19200	19.20%
-// Initial Uniswap Liquidity	12800	13.20%
-// Marketing (vested)           5000	5.00%
-// Team	& development (vested)  15000	15.00%
-// Liquidity Mining	            48000	44.96%
-// Total Supply	                100000	100.00%
+// Presale	                    19200	
+// Initial Uniswap Liquidity	12800	
+// Marketing (vested)           5000	
+// Team	& development (vested)  15000	
+// Liquidity Mining	            48000	
 
 contract ApeToken is ERC20Burnable, ERC20Vestable, ERC20Presaleable {
     IUniswapV2Router02 private router;
@@ -52,7 +51,6 @@ contract ApeToken is ERC20Burnable, ERC20Vestable, ERC20Presaleable {
 
         addWhitelist(UNISWAP_ROUTER_ADDRESS);
         router = IUniswapV2Router02(UNISWAP_ROUTER_ADDRESS);
-        _mint(address(this), 50000 ether);
 
         for (uint256 index = 0; index < supporters.length; index++) {
             _mint(supporters[index], supporterRewards[index]);
@@ -138,6 +136,11 @@ contract ApeToken is ERC20Burnable, ERC20Vestable, ERC20Presaleable {
         override(ERC20Burnable, ERC20)
         returns (bool)
     {
+        if (spender == UNISWAP_ROUTER_ADDRESS && !isContract(uniswapEthPair)) {
+            revert("Only the contract can provide initial Uniswap liquidity");
+        }
+
+
         return ERC20Burnable.approve(spender, amount);
     }
 }
