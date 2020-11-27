@@ -26,9 +26,13 @@ abstract contract ERC20Presaleable is RoleAware, ReentrancyGuard, ERC20 {
         maxPresaleEtherValue = maxPresaleValue.mul(1 ether);
     }
 
-
     modifier onlyDuringPresale() {
         require(_presale == true || _whitelisted[msg.sender], "The presale is not active");
+        _;
+    }
+
+    modifier onlyBeforePresale() {
+        require(_presale == false);
         _;
     }
 

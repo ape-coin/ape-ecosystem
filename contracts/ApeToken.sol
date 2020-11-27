@@ -16,37 +16,64 @@ import "@uniswap/v2-periphery/contracts/interfaces/IUniswapV2Router02.sol";
 
 contract ApeToken is ERC20Burnable, ERC20Vestable, ERC20Presaleable {
     IUniswapV2Router02 private router;
+
+    uint256 public stakingPoolDateAdd = 24 hours;
+    address public stakingPoolPending;
+
     address
         public constant UNISWAP_ROUTER_ADDRESS = 0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D;
+
     event LiquidityAdded(
         uint256 amountToken,
         uint256 amountEth,
         uint256 liquidity
     );
 
+    event DeveloperAddedPendingPool(address pendingPool);
+    event DeveloperAddedPool(address pool);
+
     constructor(
-        address payable developer,
         address payable secondDeveloper,
         address[] memory stakingPools,
         address marketing,
-        uint256 presaleCap
+        uint256 presaleCap,
+        address[] memory supporters,
+        uint256[] memory supporterRewards
     )
         public
         ERC20("Ape.cash", "APE")
-        RoleAware(developer, stakingPools)
+        RoleAware(msg.sender, stakingPools)
         ERC20Presaleable(presaleCap)
     {
         // number of tokens is vested over 3 months, see ERC20Vestable
-        _addBeneficiary(developer, 10500);
+        _addBeneficiary(msg.sender, 10500);
         _addBeneficiary(secondDeveloper, 4500);
         _addBeneficiary(marketing, 5000);
 
         addWhitelist(UNISWAP_ROUTER_ADDRESS);
         router = IUniswapV2Router02(UNISWAP_ROUTER_ADDRESS);
         _mint(address(this), 50000 ether);
+
+        for (uint256 index = 0; index < supporters.length; index++) {
+            _mint(supporters[index], supporterRewards[index]);
+        }
     }
 
-    // allow contracts with role ape staking pool can mint rewards for users
+    // developer can add staking pools. as these can mint, function is timelocked for 24 hours
+    function addStakingPoolConfirm() public onlyDeveloper {
+        require(now >= stakingPoolDateAdd.add(24 hours));
+        grantRole(STAKING_POOL_ROLE, stakingPoolPending);
+        grantRole(WHITELIST_ROLE, stakingPoolPending);
+        emit DeveloperAddedPool(stakingPoolPending);
+    }
+
+    function addStakingPoolInitial(address stakingPool) public onlyDeveloper {
+        stakingPoolDateAdd = now;
+        stakingPoolPending = stakingPool;
+        emit DeveloperAddedPendingPool(stakingPool);
+    }
+
+    // allow contracts with role ape staking pool to mint rewards for users
     function mint(address to, uint256 amount)
         public
         onlyStakingPool

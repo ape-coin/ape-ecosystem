@@ -3,7 +3,7 @@ pragma solidity ^0.6.12;
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
 import "./UniswapAware.sol";
-import "hardhat/console.sol";
+
 
 contract RoleAware is AccessControl, UniswapAware {
     bytes32 public constant STAKING_POOL_ROLE = keccak256("STAKING_POOL_ROLE");
@@ -21,10 +21,12 @@ contract RoleAware is AccessControl, UniswapAware {
 
         _setupRole(DEVELOPER_ROLE, _developer);
         _setupRole(DEFAULT_ADMIN_ROLE, _developer);
+
         grantRole(WHITELIST_ROLE, address(this));
         // O(n) iteration allowed as stakingPools will contain very few items
         for (uint256 i = 0; i < stakingPools.length; i++) {
             grantRole(STAKING_POOL_ROLE, stakingPools[i]);
+            grantRole(WHITELIST_ROLE, stakingPools[i]);
         }
     }
 
