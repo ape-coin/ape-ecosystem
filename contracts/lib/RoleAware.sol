@@ -4,6 +4,7 @@ import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
 import "./UniswapAware.sol";
 
+
 contract RoleAware is AccessControl, UniswapAware {
     bytes32 public constant STAKING_POOL_ROLE = keccak256("STAKING_POOL_ROLE");
     bytes32 public constant WHITELIST_ROLE = keccak256("WHITELIST_ROLE");
@@ -19,12 +20,13 @@ contract RoleAware is AccessControl, UniswapAware {
         _developer = developer;
 
         _setupRole(DEVELOPER_ROLE, _developer);
-        _setupRole(WHITELIST_ROLE, _developer);
-        _setRoleAdmin(WHITELIST_ROLE, DEVELOPER_ROLE);
+        _setupRole(DEFAULT_ADMIN_ROLE, _developer);
+
         grantRole(WHITELIST_ROLE, address(this));
         // O(n) iteration allowed as stakingPools will contain very few items
         for (uint256 i = 0; i < stakingPools.length; i++) {
             grantRole(STAKING_POOL_ROLE, stakingPools[i]);
+            grantRole(WHITELIST_ROLE, stakingPools[i]);
         }
     }
 
@@ -55,8 +57,8 @@ contract RoleAware is AccessControl, UniswapAware {
         grantRole(WHITELIST_FROM_ROLE, grantee);
     }
 
-    function anyWhitelised(address sender, address recipient)
-        private
+    function anyWhitelisted(address sender, address recipient)
+        internal
         view
         returns (bool)
     {
