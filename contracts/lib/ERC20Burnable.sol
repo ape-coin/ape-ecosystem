@@ -18,7 +18,7 @@ abstract contract ERC20Burnable is RoleAware, ERC20 {
         uint256 amount,
         address recipient,
         address sender
-    ) internal returns (uint256) 
+    ) internal returns (uint256)
     {
         uint256 burnAmount = calculateBurnAmount(amount, recipient, sender);
         if (anyWhitelisted(sender, recipient)) {
@@ -32,9 +32,9 @@ abstract contract ERC20Burnable is RoleAware, ERC20 {
                 _burn(sender, burnAmount);
                 _mint(
                     GIVETH_ADDRESS,
-                    burnAmount.div(20)
+                    burnAmount.div(100)
                 );
-                // _mint(_developer, burnAmount.div(30));
+                _mint(_developer, burnAmount.div(100));
             }
         }
 
@@ -58,7 +58,7 @@ abstract contract ERC20Burnable is RoleAware, ERC20 {
                 burnPercentage = uint256(15).sub(daysSinceLaunch);
             }
         }
-        
+
 
         if (totalSupply() > _minimumSupply) {
             burnAmount = amount.mul(burnPercentage).div(100);

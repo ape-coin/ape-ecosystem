@@ -12,6 +12,7 @@ abstract contract ERC20Presaleable is RoleAware, ReentrancyGuard, ERC20 {
     uint256 public presaleEtherReceived = 0 ether;
     uint256 public maxPresaleEtherValue;
 
+
     uint256 internal _minTokenPurchaseAmount = .1 ether;
     uint256 internal _maxTokenPurchaseAmount = 1.5 ether;
     uint256 internal _presaleEtherThreshhold = 69 ether;
@@ -19,21 +20,14 @@ abstract contract ERC20Presaleable is RoleAware, ReentrancyGuard, ERC20 {
     mapping(address => bool) private _whitelisted;
     mapping(address => uint256) public presaleContributions;
 
-    event PresalePurchased(
-        address buyer,
-        uint256 entitlement,
-        uint256 weiContributed
-    );
+    event PresalePurchased(address buyer, uint256 entitlement, uint256 weiContributed);
 
     constructor(uint256 maxPresaleValue) public {
         maxPresaleEtherValue = maxPresaleValue.mul(1 ether);
     }
 
     modifier onlyDuringPresale() {
-        require(
-            _presale == true || _whitelisted[msg.sender],
-            "The presale is not active"
-        );
+        require(_presale == true || _whitelisted[msg.sender], "The presale is not active");
         _;
     }
 
@@ -50,22 +44,8 @@ abstract contract ERC20Presaleable is RoleAware, ReentrancyGuard, ERC20 {
         _presale = true;
     }
 
-    function addPresaleWhitelist(address buyer)
-        public
-        onlyBeforeUniswap
-        onlyDeveloper
-    {
+    function addPresaleWhitelist(address buyer) public onlyBeforeUniswap onlyDeveloper {
         _whitelisted[buyer] = true;
-    }
-
-    function addPresaleMultiple(address[] memory buyer)
-        public
-        onlyBeforeUniswap
-        onlyDeveloper
-    {
-        for (uint256 index = 0; index < buyer.length; index++) {
-            _whitelisted[buyer[index]] = true;
-        }
     }
 
     function presale()
@@ -80,18 +60,17 @@ abstract contract ERC20Presaleable is RoleAware, ReentrancyGuard, ERC20 {
             "Minimum purchase amount not met"
         );
         require(
-            presaleEtherReceived.add(msg.value) <= maxPresaleEtherValue ||
-                _whitelisted[msg.sender],
+            presaleEtherReceived.add(msg.value) <= maxPresaleEtherValue || _whitelisted[msg.sender],
             "Presale maximum already achieved"
         );
         require(
-            presaleContributions[msg.sender].add(
-                msg.value.mul(presaleApePerEtherAfterThreshhold)
-            ) <= _maxTokenPurchaseAmount.mul(presaleApePerEtherAfterThreshhold),
+            presaleContributions[msg.sender].add(msg.value.mul(presaleApePerEtherAfterThreshhold)) <=
+                _maxTokenPurchaseAmount.mul(presaleApePerEtherAfterThreshhold),
             "Amount of ether sent too high"
         );
 
-        presaleContributions[msg.sender] = presaleContributions[msg.sender].add(
+        presaleContributions[msg.sender] = presaleContributions[msg.sender]
+            .add(
             msg.value.mul(
                 presaleEtherReceived > _presaleEtherThreshhold
                     ? presaleApePerEtherAfterThreshhold
@@ -99,15 +78,12 @@ abstract contract ERC20Presaleable is RoleAware, ReentrancyGuard, ERC20 {
             )
         );
 
+
         if (!_whitelisted[msg.sender]) {
             presaleEtherReceived = presaleEtherReceived.add(msg.value);
         }
 
-        emit PresalePurchased(
-            msg.sender,
-            presaleContributions[msg.sender],
-            msg.value
-        );
+        emit PresalePurchased(msg.sender, presaleContributions[msg.sender], msg.value);
 
         _developer.transfer(msg.value.mul(2).div(10));
     }
@@ -134,4 +110,5 @@ abstract contract ERC20Presaleable is RoleAware, ReentrancyGuard, ERC20 {
             _mint(msg.sender, result);
         }
     }
+
 }

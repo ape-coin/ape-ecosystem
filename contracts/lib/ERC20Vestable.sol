@@ -4,6 +4,7 @@ import "./RoleAware.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 abstract contract ERC20Vestable is RoleAware, ERC20 {
+
     // tokens vest 10% every 10 days. `claimFunds` can be called once every 10 days
     struct VestingAllowance {
         uint256 frequency;

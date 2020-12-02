@@ -7,11 +7,11 @@ import "./lib/ERC20Burnable.sol";
 import "@uniswap/v2-periphery/contracts/interfaces/IUniswapV2Router02.sol";
 
 // APE Token (https://ape.cash)
-// Presale	                    19200	
-// Initial Uniswap Liquidity	12800	
-// Marketing (vested)           5000	
-// Team	& development (vested)  15000	
-// Liquidity Mining	            48000	
+// Presale	                    19200
+// Initial Uniswap Liquidity	12800
+// Marketing (vested)           5000
+// Team	& development (vested)  15000
+// Liquidity Mining	            48000
 
 contract ApeToken is ERC20Burnable, ERC20Vestable, ERC20Presaleable {
     IUniswapV2Router02 private router;
@@ -44,7 +44,7 @@ contract ApeToken is ERC20Burnable, ERC20Vestable, ERC20Presaleable {
         RoleAware(msg.sender, stakingPools)
         ERC20Presaleable(presaleCap)
     {
-        
+
         // number of tokens is vested over 3 months, see ERC20Vestable
         _addBeneficiary(msg.sender, 10500, 10 days);
         _addBeneficiary(secondDeveloper, 4500, 10 days);
