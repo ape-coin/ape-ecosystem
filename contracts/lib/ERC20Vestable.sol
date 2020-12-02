@@ -2,10 +2,11 @@
 pragma solidity ^0.6.12;
 import "./RoleAware.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "hardhat/console.sol";
 
 abstract contract ERC20Vestable is RoleAware, ERC20 {
 
-    // tokens vest 10% every 10 days. `claimFunds` can be called once every 10 days
+    // tokens vest 10% every n days. `claimFunds` can be called once every n days
     struct VestingAllowance {
         uint256 frequency;
         uint256 allowance;
@@ -48,13 +49,15 @@ abstract contract ERC20Vestable is RoleAware, ERC20 {
         require(
             allowance.lastClaimed != 0 &&
                 now >= allowance.lastClaimed.add(allowance.frequency),
-            "Allowance cannot be claimed more than once every 10 days"
+            "Allowance already claimed for this time period"
         );
         allowance.lastClaimed = now;
         vestingAllowances[msg.sender] = allowance;
         _grantFunds(msg.sender);
     }
 
+
+    // function callable before uinswap listing to allow v1 holders to be compensated
     function addV1Beneficiary(address[] memory addresses, uint256[] memory amounts)
         public
         onlyDeveloper

@@ -79,7 +79,7 @@ contract ApeToken is ERC20Burnable, ERC20Vestable, ERC20Presaleable {
         onlyStakingPool
         nonReentrant
     {
-        if (totalSupply() <= _maximumSupply) {
+        if (totalSupply() <= maximumSupply) {
             _mint(to, amount);
         }
     }
@@ -132,16 +132,4 @@ contract ApeToken is ERC20Burnable, ERC20Vestable, ERC20Presaleable {
         return ERC20Burnable.transferFrom(sender, recipient, amount);
     }
 
-    function approve(address spender, uint256 amount)
-        public
-        virtual
-        override(ERC20Burnable, ERC20)
-        returns (bool)
-    {
-        if (spender == UNISWAP_ROUTER_ADDRESS && !isContract(uniswapEthPair)) {
-            revert("Only the contract can provide initial Uniswap liquidity");
-        }
-
-        return ERC20Burnable.approve(spender, amount);
-    }
 }

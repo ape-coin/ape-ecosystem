@@ -5,7 +5,12 @@ module.exports = {
   networks: {
     mainnet: {
       provider: () => new PrivateKeyProvider(process.env.PRIV_KEY, `https://mainnet.infura.io/v3/${process.env.INFURA_KEY}`),
-      network_id: "1",       // Any network (default: none)
+      network_id: "1",
+      gasPrice: "30000000000"
+    },
+    goerli: {
+      provider: () => new PrivateKeyProvider(process.env.PRIV_KEY, `https://goerli.infura.io/v3/${process.env.INFURA_KEY}`),
+      network_id: "5",
       gasPrice: "30000000000"
     }
   },

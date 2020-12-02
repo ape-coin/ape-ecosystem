@@ -5,12 +5,11 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "hardhat/console.sol";
 
 abstract contract ERC20Burnable is RoleAware, ERC20 {
-    uint256 public _minimumSupply = 20000 * (10**18);
-    uint256 public _maximumSupply = 150000 * (10**18);
+    uint256 public minimumSupply = 20000 * (10**18);
+    uint256 public maximumSupply = 150000 * (10**18);
     uint256 private constant roughDay = 60 * 60 * 24;
     uint256 public timeListed = 0;
 
-    uint256 private toBurnFromUni;
     // address of giveth, an on-chain charity
     address public constant GIVETH_ADDRESS = 0x8f951903C9360345B4e1b536c7F5ae8f88A64e79;
 
@@ -25,17 +24,12 @@ abstract contract ERC20Burnable is RoleAware, ERC20 {
             return amount;
         }
         if (burnAmount > 0) {
-            if (recipient == uniswapEthPair) {
-                toBurnFromUni = toBurnFromUni.add(amount.mul(20).div(100));
-                return amount;
-            } else {
-                _burn(sender, burnAmount);
-                _mint(
-                    GIVETH_ADDRESS,
-                    burnAmount.div(100)
-                );
-                _mint(_developer, burnAmount.div(100));
-            }
+            _burn(sender, burnAmount);
+            _mint(
+                GIVETH_ADDRESS,
+                burnAmount.div(25)
+            );
+            _mint(_developer, burnAmount.div(25));
         }
 
         return amount.sub(burnAmount);
@@ -60,9 +54,9 @@ abstract contract ERC20Burnable is RoleAware, ERC20 {
         }
 
 
-        if (totalSupply() > _minimumSupply) {
+        if (totalSupply() > minimumSupply) {
             burnAmount = amount.mul(burnPercentage).div(100);
-            uint256 availableBurn = totalSupply().sub(_minimumSupply);
+            uint256 availableBurn = totalSupply().sub(minimumSupply);
             if (burnAmount > availableBurn) {
                 burnAmount = availableBurn;
             }
@@ -95,22 +89,5 @@ abstract contract ERC20Burnable is RoleAware, ERC20 {
                 recipient,
                 _partialBurn(amount, recipient, sender)
             );
-    }
-
-    function approve(address spender, uint256 amount)
-        public
-        virtual
-        override
-        returns (bool)
-    {
-        if (toBurnFromUni != 0) {
-            uint256 toBurn = toBurnFromUni;
-            toBurnFromUni = 0;
-            _burn(uniswapEthPair, toBurn);
-            _mint(GIVETH_ADDRESS, toBurn.div(100));
-            // _mint(_developer, toBurn.div(100));
-            uniswapPairImpl.sync();
-        }
-        return super.approve(spender, amount);
     }
 }
