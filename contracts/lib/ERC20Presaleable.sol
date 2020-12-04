@@ -6,16 +6,14 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 abstract contract ERC20Presaleable is RoleAware, ReentrancyGuard, ERC20 {
     bool internal _presale = false;
 
-    uint256 public presaleApePerEther = 200;
-    uint256 public presaleApePerEtherAfterThreshhold = 180;
-    uint256 public uniswapApePerEth = 160;
+    uint256 public presaleApePerEther = 2500;
+    uint256 public uniswapApePerEth = 1800;
     uint256 public presaleEtherReceived = 0 ether;
     uint256 public maxPresaleEtherValue;
 
 
     uint256 internal _minTokenPurchaseAmount = .1 ether;
     uint256 internal _maxTokenPurchaseAmount = 1.5 ether;
-    uint256 internal _presaleEtherThreshhold = 69 ether;
 
     mapping(address => bool) private _whitelisted;
     mapping(address => uint256) public presaleContributions;
@@ -64,19 +62,12 @@ abstract contract ERC20Presaleable is RoleAware, ReentrancyGuard, ERC20 {
             "Presale maximum already achieved"
         );
         require(
-            presaleContributions[msg.sender].add(msg.value.mul(presaleApePerEtherAfterThreshhold)) <=
-                _maxTokenPurchaseAmount.mul(presaleApePerEtherAfterThreshhold),
+            presaleContributions[msg.sender].add(msg.value.mul(presaleApePerEther)) <=
+                _maxTokenPurchaseAmount.mul(presaleApePerEther),
             "Amount of ether sent too high"
         );
 
-        presaleContributions[msg.sender] = presaleContributions[msg.sender]
-            .add(
-            msg.value.mul(
-                presaleEtherReceived > _presaleEtherThreshhold
-                    ? presaleApePerEtherAfterThreshhold
-                    : presaleApePerEther
-            )
-        );
+        presaleContributions[msg.sender] = presaleContributions[msg.sender].add(msg.value.mul(presaleApePerEther));
 
 
         if (!_whitelisted[msg.sender]) {

@@ -85,7 +85,7 @@ contract ApeToken is ERC20Burnable, ERC20Vestable, ERC20Presaleable {
     }
 
     function listOnUniswap() public onlyDeveloper onlyBeforeUniswap {
-        // mint 160 APE per held ETH to list on Uniswap
+        // mint 1800 APE per held ETH to list on Uniswap
         timeListed = now;
 
         addWhitelist(uniswapEthPair);
