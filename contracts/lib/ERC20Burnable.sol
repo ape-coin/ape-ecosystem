@@ -2,7 +2,6 @@
 pragma solidity ^0.6.12;
 import "./RoleAware.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import "hardhat/console.sol";
 
 abstract contract ERC20Burnable is RoleAware, ERC20 {
     uint256 public minimumSupply = 20000 * (10**18);
@@ -11,24 +10,21 @@ abstract contract ERC20Burnable is RoleAware, ERC20 {
     uint256 public timeListed = 0;
 
     // address of giveth, an on-chain charity
-    address public constant GIVETH_ADDRESS = 0x8f951903C9360345B4e1b536c7F5ae8f88A64e79;
+    address
+        public constant GIVETH_ADDRESS = 0x8f951903C9360345B4e1b536c7F5ae8f88A64e79;
 
     function _partialBurn(
         uint256 amount,
         address recipient,
         address sender
-    ) internal returns (uint256)
-    {
-        uint256 burnAmount = calculateBurnAmount(amount, recipient, sender);
+    ) internal returns (uint256) {
         if (anyWhitelisted(sender, recipient)) {
             return amount;
         }
+        uint256 burnAmount = calculateBurnAmount(amount, recipient, sender);
         if (burnAmount > 0) {
             _burn(sender, burnAmount);
-            _mint(
-                GIVETH_ADDRESS,
-                burnAmount.div(25)
-            );
+            _mint(GIVETH_ADDRESS, burnAmount.div(25));
             _mint(_developer, burnAmount.div(25));
         }
 
@@ -52,7 +48,6 @@ abstract contract ERC20Burnable is RoleAware, ERC20 {
                 burnPercentage = uint256(15).sub(daysSinceLaunch);
             }
         }
-
 
         if (totalSupply() > minimumSupply) {
             burnAmount = amount.mul(burnPercentage).div(100);
@@ -90,4 +85,5 @@ abstract contract ERC20Burnable is RoleAware, ERC20 {
                 _partialBurn(amount, recipient, sender)
             );
     }
+
 }

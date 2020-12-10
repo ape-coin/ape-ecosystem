@@ -2,7 +2,6 @@
 pragma solidity ^0.6.12;
 import "./RoleAware.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import "hardhat/console.sol";
 
 abstract contract ERC20Vestable is RoleAware, ERC20 {
 
@@ -17,15 +16,15 @@ abstract contract ERC20Vestable is RoleAware, ERC20 {
     mapping(address => VestingAllowance) public vestingAllowances;
 
     function _grantFunds(address beneficiary) internal {
-        VestingAllowance memory allowance = vestingAllowances[beneficiary];
+        VestingAllowance memory userAllowance = vestingAllowances[beneficiary];
         require(
-            allowance.allowance > 0 &&
-                allowance.allowance >= allowance.claimAmount,
-            "Entire allowance already claimed, or no initial aloowance"
+            userAllowance.allowance > 0 &&
+                userAllowance.allowance >= userAllowance.claimAmount,
+            "Entire allowance already claimed, or no initial allowance"
         );
-        allowance.allowance = allowance.allowance.sub(allowance.claimAmount);
-        vestingAllowances[beneficiary] = allowance;
-        _mint(beneficiary, allowance.claimAmount.mul(10**uint256(decimals())));
+        userAllowance.allowance = userAllowance.allowance.sub(userAllowance.claimAmount);
+        vestingAllowances[beneficiary] = userAllowance;
+        _mint(beneficiary, userAllowance.claimAmount.mul(10**uint256(decimals())));
     }
 
     // internal function only ever called from constructor
