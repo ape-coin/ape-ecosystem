@@ -4,13 +4,12 @@ import "./RoleAware.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 abstract contract ERC20Presaleable is RoleAware, ReentrancyGuard, ERC20 {
-    bool public presale = false;
+    bool public isPresale = false;
 
     uint256 public presaleApePerEther = 2500;
     uint256 public uniswapApePerEth = 1800;
     uint256 public presaleEtherReceived = 0 ether;
     uint256 public maxPresaleEtherValue;
-
 
     uint256 internal _minTokenPurchaseAmount = .1 ether;
     uint256 internal _maxTokenPurchaseAmount = 1.5 ether;
@@ -25,21 +24,21 @@ abstract contract ERC20Presaleable is RoleAware, ReentrancyGuard, ERC20 {
     }
 
     modifier onlyDuringPresale() {
-        require(presale == true || _whitelisted[msg.sender], "The presale is not active");
+        require(isPresale == true || _whitelisted[msg.sender], "The presale is not active");
         _;
     }
 
     modifier onlyBeforePresale() {
-        require(presale == false);
+        require(isPresale == false);
         _;
     }
 
     function stopPresale() public onlyDeveloper onlyDuringPresale {
-        presale = false;
+        isPresale = false;
     }
 
     function startPresale() public onlyBeforeUniswap onlyDeveloper {
-        presale = true;
+        isPresale = true;
     }
 
     function addPresaleWhitelist(address buyer) public onlyBeforeUniswap onlyDeveloper {

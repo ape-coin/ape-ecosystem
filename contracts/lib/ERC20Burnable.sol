@@ -5,7 +5,7 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 abstract contract ERC20Burnable is RoleAware, ERC20 {
     uint256 public minimumSupply = 20000 * (10**18);
-    uint256 public maximumSupply = 150000 * (10**18);
+    uint256 public maximumSupply = 5000000 * (10**18);
     uint256 private constant roughDay = 60 * 60 * 24;
     uint256 public timeListed = 0;
 

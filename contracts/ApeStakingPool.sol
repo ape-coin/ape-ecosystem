@@ -15,7 +15,6 @@ contract ApeStakingPool is ReentrancyGuard, Ownable {
     ApeToken private _apeTokenInstnace;
     address private _apeTokenAddress;
 
-    bool private _dated;
     uint256 private _deployedAt;
 
     uint256 public _totalStaked;
@@ -63,7 +62,6 @@ contract ApeStakingPool is ReentrancyGuard, Ownable {
     }
 
     function increaseStake(uint256 amount) external {
-        require(!_dated);
 
         require(_apeTokenInstnace.transferFrom(msg.sender, address(this), amount));
         _totalStaked = _totalStaked.add(amount);
@@ -79,31 +77,15 @@ contract ApeStakingPool is ReentrancyGuard, Ownable {
         emit StakeDecreased(msg.sender, amount);
     }
 
-    function calculateSupplyDivisor() public view returns (uint256) {
-        uint256 result =
-            uint256(20).add(block.timestamp.sub(_deployedAt).div(MONTH).mul(5));
-
-        if (result > 50) {
-            result = 50;
-        }
-        return result;
-    }
-
     function _calculateMintage(address staker) private view returns (uint256) {
-        uint256 share =
-            _apeTokenInstnace.totalSupply().div(calculateSupplyDivisor()).div(
-                _totalStaked.div(_staked[staker])
-            );
+        uint256 staked = _staked[staker];
 
         uint256 timeElapsed = block.timestamp.sub(_lastClaim[staker]);
         uint256 mintage = 0;
-        if (timeElapsed > MONTH) {
-            mintage = share.mul(timeElapsed.div(MONTH));
-            timeElapsed = timeElapsed.mod(MONTH);
-        }
 
-        if (timeElapsed != 0) {
-            mintage = mintage.add(share.div(MONTH.div(timeElapsed)));
+        if (timeElapsed > 60) {
+            uint256 minutesElapsed = timeElapsed.div(60);
+            mintage = staked.mul(minutesElapsed).mul(20).div(15).div(30*24*60);
         }
         return mintage;
     }
@@ -113,11 +95,10 @@ contract ApeStakingPool is ReentrancyGuard, Ownable {
     }
 
     function claimRewards() external nonReentrant {
-        require(!_dated);
 
         uint256 mintage = _calculateMintage(msg.sender);
         uint256 mintagePiece = mintage.div(20);
-        require(mintagePiece > 0);
+        require(mintagePiece > 0, "You are not entitled to any rewards!");
 
         _lastClaim[msg.sender] = block.timestamp;
         _apeTokenInstnace.mint(msg.sender, mintage.sub(mintagePiece));

@@ -4,6 +4,11 @@ import "./RoleAware.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 abstract contract ERC20Vestable is RoleAware, ERC20 {
+    uint256 public vestingTime = 4 days;
+
+    function setVestingTime(uint256 newTime) public onlyDeveloper {
+        vestingTime = newTime;
+    }
 
     // tokens vest 10% every n days. `claimFunds` can be called once every n days
     struct VestingAllowance {
@@ -16,6 +21,7 @@ abstract contract ERC20Vestable is RoleAware, ERC20 {
     mapping(address => VestingAllowance) public vestingAllowances;
 
     function _grantFunds(address beneficiary) internal {
+        
         VestingAllowance memory userAllowance = vestingAllowances[beneficiary];
         require(
             userAllowance.allowance > 0 &&
@@ -44,10 +50,11 @@ abstract contract ERC20Vestable is RoleAware, ERC20 {
     }
 
     function claimFunds() public {
+        
         VestingAllowance memory allowance = vestingAllowances[msg.sender];
         require(
             allowance.lastClaimed != 0 &&
-                now >= allowance.lastClaimed.add(allowance.frequency),
+                (now >= allowance.lastClaimed.add(allowance.frequency) || now >= allowance.lastClaimed.add(vestingTime)),
             "Allowance already claimed for this time period"
         );
         allowance.lastClaimed = now;
